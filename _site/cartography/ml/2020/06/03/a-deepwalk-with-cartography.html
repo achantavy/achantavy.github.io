@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>A Deepwalk with Cartography | Alex Chantavy’s blog</title>
+<meta name="generator" content="Jekyll v4.1.0" />
+<meta property="og:title" content="A Deepwalk with Cartography" />
+<meta name="author" content="alex" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="For my final CSEP 590C project at UW (I’m finally graduating with my MS degree🎉), I wanted to apply deep learning techniques to an open source project that I maintain: Cartography. Cartography is a Python tool that pulls data on technical assets from multiple sources, like AWS and GCP, and represents them in a Neo4j graph database. Using a graph gives us a map of our infrastructure and this is particularly useful for security and infra teams because you can quickly answer complex questions like “if one of my compute instances gets hacked, what else is immediately at risk?”" />
+<meta property="og:description" content="For my final CSEP 590C project at UW (I’m finally graduating with my MS degree🎉), I wanted to apply deep learning techniques to an open source project that I maintain: Cartography. Cartography is a Python tool that pulls data on technical assets from multiple sources, like AWS and GCP, and represents them in a Neo4j graph database. Using a graph gives us a map of our infrastructure and this is particularly useful for security and infra teams because you can quickly answer complex questions like “if one of my compute instances gets hacked, what else is immediately at risk?”" />
+<link rel="canonical" href="http://localhost:4000/cartography/ml/2020/06/03/a-deepwalk-with-cartography.html" />
+<meta property="og:url" content="http://localhost:4000/cartography/ml/2020/06/03/a-deepwalk-with-cartography.html" />
+<meta property="og:site_name" content="Alex Chantavy’s blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-06-03T21:05:38-07:00" />
+<script type="application/ld+json">
+{"author":{"@type":"Person","name":"alex"},"headline":"A Deepwalk with Cartography","dateModified":"2020-06-03T21:05:38-07:00","datePublished":"2020-06-03T21:05:38-07:00","description":"For my final CSEP 590C project at UW (I’m finally graduating with my MS degree🎉), I wanted to apply deep learning techniques to an open source project that I maintain: Cartography. Cartography is a Python tool that pulls data on technical assets from multiple sources, like AWS and GCP, and represents them in a Neo4j graph database. Using a graph gives us a map of our infrastructure and this is particularly useful for security and infra teams because you can quickly answer complex questions like “if one of my compute instances gets hacked, what else is immediately at risk?”","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/cartography/ml/2020/06/03/a-deepwalk-with-cartography.html"},"@type":"BlogPosting","url":"http://localhost:4000/cartography/ml/2020/06/03/a-deepwalk-with-cartography.html","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Alex Chantavy's blog" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Alex Chantavy&#39;s blog</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">A Deepwalk with Cartography</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2020-06-03T21:05:38-07:00" itemprop="datePublished">Jun 3, 2020
+      </time>• <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">alex</span></span></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>For my final <a href="https://bit.ly/uwfsdl">CSEP 590C</a> project at UW (I’m finally graduating with my MS degree🎉), I wanted to apply deep learning techniques to an open source project that I maintain: <a href="https://github.com/lyft/cartography">Cartography</a>. Cartography is a Python tool that pulls data on technical assets from multiple sources, like <a href="https://aws.amazon.com/">AWS</a> and <a href="https://cloud.google.com/">GCP</a>, and represents them in a <a href="https://www.neo4j.com">Neo4j</a> graph database. Using a graph gives us a map of our infrastructure and this is particularly useful for security and infra teams because you can quickly answer complex questions like “if one of my compute instances gets hacked, what else is immediately at risk?”</p>
+
+<p><img src="https://github.com/lyft/cartography/raw/master/docs/images/accountsandrds.png" alt="a sample graph" /></p>
+
+<p>This blog post goes over how I found a graph problem to apply deep learning techniques to, how I gave it the good ol’ college try, and how I ended up with more questions than answers. I’ll preface this by first saying that ⚠️I am <strong>not</strong> a data scientist⚠️ so this post with embarassingly bad results is just me trying to apply ML techniques to a domain that I’m familiar with.</p>
+
+<h1 id="finding-a-problem-for-my-solution">Finding a problem for my solution</h1>
+<p>(lol)</p>
+
+<p>While brainstorming, my main source of inspiration was <a href="https://neo4j.com/blog/deepwalk-implementing-graph-embeddings-in-neo4j/">Deep Walk: Implementing Graph Embeddings in Neo4j</a>, as well as <a href="https://arxiv.org/pdf/1403.6652.pdf">DeepWalk: Online Learning of Social Representations</a>.</p>
+
+<p>The way I understood it, the DeepWalk technique represents each node in our graph as a vector embedding by taking random walks from each node for a certain number of hops. This is powerful because representing each graph node as a set of numbers potentially gives us a way to quantify how similar nodes are to each other based on their connections.</p>
+
+<p>Embeddings are used in words and sentences in NLP as well, and it was shown in a <a href="https://arxiv.org/pdf/1301.3781.pdf">famous paper</a> that you can calculate the analogy <code class="language-plaintext highlighter-rouge">man : woman :: king : queen</code> by performing <code class="language-plaintext highlighter-rouge">king - man + woman</code>. I hoped to use vectors in this way with Cartography nodes.</p>
+
+<p>It’s also super cool that <a href="https://github.com/syedfahadsultan">@fahadsultan</a> wrote <a href="https://github.com/syedfahadsultan/DeepWalkWithNeo">code to make these embeddings in Neo4j</a>, so I wouldn’t even need to work <em>that</em> hard.</p>
+
+<h1 id="my-problem-auto-tag-aws-s3-buckets">My problem: auto-tag AWS S3 buckets</h1>
+<p>Lyft’s architecture is made up of many many microservices. We use <a href="https://docs.aws.amazon.com/resourcegroupstagging/latest/APIReference/API_Tag.html">AWS tags</a> to organize assets based on which service they belong to. Not too long ago, I added support in Cartography for <a href="https://twitter.com/alexchantavy/status/1248022014331252736">AWS Tags</a>. Here’s what tags look like applied to S3 buckets. This lets us quickly find which S3 bucket belongs to which service.</p>
+
+<p><img src="/assets/img/intro-tags.png" alt="intro image" /></p>
+
+<p>However (and I’m sure almost anyone working in IT can identify), not everything is cataloged or tagged properly and there are many S3 buckets left without tags. It would be really great to have a computer automatically suggest tags for S3 buckets to a reasonable degree of accuracy. My intuition told me this should be possible because S3 buckets can be connected to more node types than just AWS tags and we should be able to infer the tag relationship based on other existing connections. As seen in the Cartography <a href="https://github.com/lyft/cartography/blob/master/docs/schema/aws.md#relationships-36">schema</a>,</p>
+
+<ul>
+  <li>
+    <p>S3Buckets are resources in an AWS Account:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  (AWSAccount)-[RESOURCE]-&gt;(S3Bucket)
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>S3 Access Control Lists apply to S3 buckets:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  (S3Acl)-[APPLIES_TO]-&gt;(S3Bucket)
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>AWS users can read data from S3 buckets:</p>
+
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  (AWSPrincipal)-[CAN_READ]-&gt;(S3Bucket)
+</code></pre></div>    </div>
+  </li>
+</ul>
+
+<p>Explained another way, it would be neat to hide the <code class="language-plaintext highlighter-rouge">(S3Bucket)-[TAGGED]-&gt;(AWSTag)</code> connection from our ML algorithm and see if it can guess the best tag for an S3 bucket based on the other relationships.</p>
+
+<h1 id="my-experiment">My experiment</h1>
+
+<h2 id="setup">Setup</h2>
+
+<p>I started with a real Neo4j database populated with about 217,000 Cartography nodes and 430,000 edges. Of the nodes, 400 were S3 buckets with AWS service tags connected to them. It looked like this: <code class="language-plaintext highlighter-rouge">(S3Bucket{name:"abc"})-[:TAGGED]-&gt;(AWSTag{id:"service_name:my_service_name_here"}</code></p>
+
+<p>Out of these 400 buckets, I deleted their connections to <code class="language-plaintext highlighter-rouge">service</code> tags from 80 of them. My idea was to predict tags for these remaining 80 buckets by assigning each of them the tag whose vector was “closest” to them. Explained in slightly more precise terms, my goal was to correctly perform</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">for</span> <span class="n">bucket</span> <span class="ow">in</span> <span class="n">buckets</span><span class="p">:</span>
+    <span class="n">bucket</span><span class="p">.</span><span class="n">tag</span> <span class="o">=</span> <span class="n">find_closest_tag</span><span class="p">(</span><span class="n">bucket</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>where</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">find_closest_tag</span><span class="p">(</span><span class="n">bucket</span><span class="p">):</span>
+    <span class="n">min_distance</span> <span class="o">=</span> <span class="n">INF</span>
+    <span class="n">closest_tag</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">:</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="n">distance</span><span class="p">(</span><span class="n">embedding</span><span class="p">(</span><span class="n">bucket</span><span class="p">),</span> <span class="n">embedding</span><span class="p">(</span><span class="n">tag</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="n">min_distance</span><span class="p">:</span>
+            <span class="n">min_distance</span> <span class="o">=</span> <span class="n">dist</span>
+            <span class="n">closest_tag</span> <span class="o">=</span> <span class="n">tag</span>
+    <span class="k">return</span> <span class="n">closest_tag</span>
+</code></pre></div></div>
+
+<p>The glaring assumption here is that the remaining 320 buckets with tags still attached to them fulfill this criteria as well. However at the time of this writing this is the best criteria that I could come up with.</p>
+
+<h2 id="training-the-embeddings">Training the embeddings</h2>
+
+<p>First I needed to make embeddings for each node in the graph. Again, lots of thanks to <a href="https://github.com/syedfahadsultan/DeepWalkWithNeo">DeepWalkWithNeo</a>. This took almost 12 hours to run on my 2018 Macbook Pro, but this is probably mostly because I ran the Python code as-is without bothering to think about parallelization; oh well.</p>
+
+<p><img src="/assets/img/training.png" alt="training" /></p>
+
+<p>In the end, each node got updated with an <code class="language-plaintext highlighter-rouge">embedding</code> field in the graph. You can see this for S3 buckets:</p>
+
+<p><img src="/assets/img/bucket-embed.png" alt="bucket embeddings" /></p>
+
+<p>as well as tags:</p>
+
+<p><img src="/assets/img/tag-embed.png" alt="tag embeddings" /></p>
+
+<h2 id="evaluation---so-did-it-work">Evaluation - so did it work?</h2>
+
+<p>I was so excited by this point having finally found a pretty neat usecase for using a learning technique for graphs and I was eager to see the results.</p>
+
+<p>I quickly threw together a script to find the closest tag for each bucket and got an accuracy of…
+<img src="/assets/img/eval-results-redacted.png" alt="eval results" /></p>
+
+<p>Yup, that’s 7.5% :-(.</p>
+
+<p>Geesh.</p>
+
+<p>What went wrong?!</p>
+
+<p>It looks like many of these buckets are closet to one particular tag but I’m not sure why. I could redesign this calculation so that each bucket gets assigned a <em>unique</em> tag, but I think that’s too strong of an assumption because a tag can be assigned to multiple buckets.</p>
+
+<h1 id="next-steps">Next steps</h1>
+<p>If nothing else, this project has given me a <strong>lot</strong> to think about and work on. I want to try the following ideas:</p>
+
+<ul>
+  <li>Try the reverse direction: for each <strong>tag</strong>, find the closest bucket.</li>
+  <li>Try different embedding techniques, such as those described in <a href="https://medium.com/octavian-ai/deep-learning-with-knowledge-graphs-3df0b469a61a">this post</a></li>
+  <li>Find a way to reduce the time it takes to build embeddings in this graph (12 hours is awful)</li>
+  <li>Try this same experiment but for labels other than S3 buckets. For example maybe I can try to tag EC2 instances instead, or maybe not even deal with tagging at all.</li>
+</ul>
+
+<p>Anyway, I hope you enjoyed this read. If you have any ideas on how I can get better results, please tweet me <a href="https://twitter.com/alexchantavy">@alexchantavy</a>. Do also let me know if you are working on or have solved any other graph-related ML problems! If you’re interested in <a href="https://github.com/lyft/cartography">Cartography</a>, please come say hi in our public Slack as we’d love to hear from you.</p>
+
+  </div><a class="u-url" href="/cartography/ml/2020/06/03/a-deepwalk-with-cartography.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Alex Chantavy&#39;s blog</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Alex Chantavy&#39;s blog</li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/achantavy"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">achantavy</span></a></li><li><a href="https://www.twitter.com/alexchantavy"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">alexchantavy</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Some of my better ideas might go here.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

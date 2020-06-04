@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.1.0">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2020-06-03T22:01:18-07:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">Alex Chantavy’s blog</title><subtitle>Some of my better ideas might go here.</subtitle><entry><title type="html">A Deepwalk with Cartography</title><link href="http://localhost:4000/cartography/ml/2020/06/03/a-deepwalk-with-cartography.html" rel="alternate" type="text/html" title="A Deepwalk with Cartography" /><published>2020-06-03T21:05:38-07:00</published><updated>2020-06-03T21:05:38-07:00</updated><id>http://localhost:4000/cartography/ml/2020/06/03/a-deepwalk-with-cartography</id><content type="html" xml:base="http://localhost:4000/cartography/ml/2020/06/03/a-deepwalk-with-cartography.html">&lt;p&gt;For my final &lt;a href=&quot;https://bit.ly/uwfsdl&quot;&gt;CSEP 590C&lt;/a&gt; project at UW (I’m finally graduating with my MS degree🎉), I wanted to apply deep learning techniques to an open source project that I maintain: &lt;a href=&quot;https://github.com/lyft/cartography&quot;&gt;Cartography&lt;/a&gt;. Cartography is a Python tool that pulls data on technical assets from multiple sources, like &lt;a href=&quot;https://aws.amazon.com/&quot;&gt;AWS&lt;/a&gt; and &lt;a href=&quot;https://cloud.google.com/&quot;&gt;GCP&lt;/a&gt;, and represents them in a &lt;a href=&quot;https://www.neo4j.com&quot;&gt;Neo4j&lt;/a&gt; graph database. Using a graph gives us a map of our infrastructure and this is particularly useful for security and infra teams because you can quickly answer complex questions like “if one of my compute instances gets hacked, what else is immediately at risk?”&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;https://github.com/lyft/cartography/raw/master/docs/images/accountsandrds.png&quot; alt=&quot;a sample graph&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;This blog post goes over how I found a graph problem to apply deep learning techniques to, how I gave it the good ol’ college try, and how I ended up with more questions than answers. I’ll preface this by first saying that ⚠️I am &lt;strong&gt;not&lt;/strong&gt; a data scientist⚠️ so this post with embarassingly bad results is just me trying to apply ML techniques to a domain that I’m familiar with.&lt;/p&gt;
+
+&lt;h1 id=&quot;finding-a-problem-for-my-solution&quot;&gt;Finding a problem for my solution&lt;/h1&gt;
+&lt;p&gt;(lol)&lt;/p&gt;
+
+&lt;p&gt;While brainstorming, my main source of inspiration was &lt;a href=&quot;https://neo4j.com/blog/deepwalk-implementing-graph-embeddings-in-neo4j/&quot;&gt;Deep Walk: Implementing Graph Embeddings in Neo4j&lt;/a&gt;, as well as &lt;a href=&quot;https://arxiv.org/pdf/1403.6652.pdf&quot;&gt;DeepWalk: Online Learning of Social Representations&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The way I understood it, the DeepWalk technique represents each node in our graph as a vector embedding by taking random walks from each node for a certain number of hops. This is powerful because representing each graph node as a set of numbers potentially gives us a way to quantify how similar nodes are to each other based on their connections.&lt;/p&gt;
+
+&lt;p&gt;Embeddings are used in words and sentences in NLP as well, and it was shown in a &lt;a href=&quot;https://arxiv.org/pdf/1301.3781.pdf&quot;&gt;famous paper&lt;/a&gt; that you can calculate the analogy &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;man : woman :: king : queen&lt;/code&gt; by performing &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;king - man + woman&lt;/code&gt;. I hoped to use vectors in this way with Cartography nodes.&lt;/p&gt;
+
+&lt;p&gt;It’s also super cool that &lt;a href=&quot;https://github.com/syedfahadsultan&quot;&gt;@fahadsultan&lt;/a&gt; wrote &lt;a href=&quot;https://github.com/syedfahadsultan/DeepWalkWithNeo&quot;&gt;code to make these embeddings in Neo4j&lt;/a&gt;, so I wouldn’t even need to work &lt;em&gt;that&lt;/em&gt; hard.&lt;/p&gt;
+
+&lt;h1 id=&quot;my-problem-auto-tag-aws-s3-buckets&quot;&gt;My problem: auto-tag AWS S3 buckets&lt;/h1&gt;
+&lt;p&gt;Lyft’s architecture is made up of many many microservices. We use &lt;a href=&quot;https://docs.aws.amazon.com/resourcegroupstagging/latest/APIReference/API_Tag.html&quot;&gt;AWS tags&lt;/a&gt; to organize assets based on which service they belong to. Not too long ago, I added support in Cartography for &lt;a href=&quot;https://twitter.com/alexchantavy/status/1248022014331252736&quot;&gt;AWS Tags&lt;/a&gt;. Here’s what tags look like applied to S3 buckets. This lets us quickly find which S3 bucket belongs to which service.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/intro-tags.png&quot; alt=&quot;intro image&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;However (and I’m sure almost anyone working in IT can identify), not everything is cataloged or tagged properly and there are many S3 buckets left without tags. It would be really great to have a computer automatically suggest tags for S3 buckets to a reasonable degree of accuracy. My intuition told me this should be possible because S3 buckets can be connected to more node types than just AWS tags and we should be able to infer the tag relationship based on other existing connections. As seen in the Cartography &lt;a href=&quot;https://github.com/lyft/cartography/blob/master/docs/schema/aws.md#relationships-36&quot;&gt;schema&lt;/a&gt;,&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;S3Buckets are resources in an AWS Account:&lt;/p&gt;
+
+    &lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  (AWSAccount)-[RESOURCE]-&amp;gt;(S3Bucket)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;S3 Access Control Lists apply to S3 buckets:&lt;/p&gt;
+
+    &lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  (S3Acl)-[APPLIES_TO]-&amp;gt;(S3Bucket)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;AWS users can read data from S3 buckets:&lt;/p&gt;
+
+    &lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  (AWSPrincipal)-[CAN_READ]-&amp;gt;(S3Bucket)
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Explained another way, it would be neat to hide the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;(S3Bucket)-[TAGGED]-&amp;gt;(AWSTag)&lt;/code&gt; connection from our ML algorithm and see if it can guess the best tag for an S3 bucket based on the other relationships.&lt;/p&gt;
+
+&lt;h1 id=&quot;my-experiment&quot;&gt;My experiment&lt;/h1&gt;
+
+&lt;h2 id=&quot;setup&quot;&gt;Setup&lt;/h2&gt;
+
+&lt;p&gt;I started with a real Neo4j database populated with about 217,000 Cartography nodes and 430,000 edges. Of the nodes, 400 were S3 buckets with AWS service tags connected to them. It looked like this: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;(S3Bucket{name:&quot;abc&quot;})-[:TAGGED]-&amp;gt;(AWSTag{id:&quot;service_name:my_service_name_here&quot;}&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Out of these 400 buckets, I deleted their connections to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;service&lt;/code&gt; tags from 80 of them. My idea was to predict tags for these remaining 80 buckets by assigning each of them the tag whose vector was “closest” to them. Explained in slightly more precise terms, my goal was to correctly perform&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bucket&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;buckets&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;bucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tag&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;find_closest_tag&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;where&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;find_closest_tag&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;min_distance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;INF&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;closest_tag&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tag&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tags&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;dist&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;distance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;embedding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bucket&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;embedding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tag&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dist&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;min_distance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;min_distance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dist&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;closest_tag&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tag&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;closest_tag&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The glaring assumption here is that the remaining 320 buckets with tags still attached to them fulfill this criteria as well. However at the time of this writing this is the best criteria that I could come up with.&lt;/p&gt;
+
+&lt;h2 id=&quot;training-the-embeddings&quot;&gt;Training the embeddings&lt;/h2&gt;
+
+&lt;p&gt;First I needed to make embeddings for each node in the graph. Again, lots of thanks to &lt;a href=&quot;https://github.com/syedfahadsultan/DeepWalkWithNeo&quot;&gt;DeepWalkWithNeo&lt;/a&gt;. This took almost 12 hours to run on my 2018 Macbook Pro, but this is probably mostly because I ran the Python code as-is without bothering to think about parallelization; oh well.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/training.png&quot; alt=&quot;training&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In the end, each node got updated with an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;embedding&lt;/code&gt; field in the graph. You can see this for S3 buckets:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/bucket-embed.png&quot; alt=&quot;bucket embeddings&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;as well as tags:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/tag-embed.png&quot; alt=&quot;tag embeddings&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;evaluation---so-did-it-work&quot;&gt;Evaluation - so did it work?&lt;/h2&gt;
+
+&lt;p&gt;I was so excited by this point having finally found a pretty neat usecase for using a learning technique for graphs and I was eager to see the results.&lt;/p&gt;
+
+&lt;p&gt;I quickly threw together a script to find the closest tag for each bucket and got an accuracy of…
+&lt;img src=&quot;/assets/img/eval-results-redacted.png&quot; alt=&quot;eval results&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Yup, that’s 7.5% :-(.&lt;/p&gt;
+
+&lt;p&gt;Geesh.&lt;/p&gt;
+
+&lt;p&gt;What went wrong?!&lt;/p&gt;
+
+&lt;p&gt;It looks like many of these buckets are closet to one particular tag but I’m not sure why. I could redesign this calculation so that each bucket gets assigned a &lt;em&gt;unique&lt;/em&gt; tag, but I think that’s too strong of an assumption because a tag can be assigned to multiple buckets.&lt;/p&gt;
+
+&lt;h1 id=&quot;next-steps&quot;&gt;Next steps&lt;/h1&gt;
+&lt;p&gt;If nothing else, this project has given me a &lt;strong&gt;lot&lt;/strong&gt; to think about and work on. I want to try the following ideas:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Try the reverse direction: for each &lt;strong&gt;tag&lt;/strong&gt;, find the closest bucket.&lt;/li&gt;
+  &lt;li&gt;Try different embedding techniques, such as those described in &lt;a href=&quot;https://medium.com/octavian-ai/deep-learning-with-knowledge-graphs-3df0b469a61a&quot;&gt;this post&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Find a way to reduce the time it takes to build embeddings in this graph (12 hours is awful)&lt;/li&gt;
+  &lt;li&gt;Try this same experiment but for labels other than S3 buckets. For example maybe I can try to tag EC2 instances instead, or maybe not even deal with tagging at all.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Anyway, I hope you enjoyed this read. If you have any ideas on how I can get better results, please tweet me &lt;a href=&quot;https://twitter.com/alexchantavy&quot;&gt;@alexchantavy&lt;/a&gt;. Do also let me know if you are working on or have solved any other graph-related ML problems! If you’re interested in &lt;a href=&quot;https://github.com/lyft/cartography&quot;&gt;Cartography&lt;/a&gt;, please come say hi in our public Slack as we’d love to hear from you.&lt;/p&gt;</content><author><name>alex</name></author><summary type="html">For my final CSEP 590C project at UW (I’m finally graduating with my MS degree🎉), I wanted to apply deep learning techniques to an open source project that I maintain: Cartography. Cartography is a Python tool that pulls data on technical assets from multiple sources, like AWS and GCP, and represents them in a Neo4j graph database. Using a graph gives us a map of our infrastructure and this is particularly useful for security and infra teams because you can quickly answer complex questions like “if one of my compute instances gets hacked, what else is immediately at risk?”</summary></entry></feed>
