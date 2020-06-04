@@ -1,7 +1,7 @@
 ---
 layout: post
 author: alex
-title:  "7.5% accuracy: My Deepwalk with Cartography"
+title:  "7.5% accuracy🤫 My Deepwalk with Cartography"
 date:   2020-06-03 21:05:38 -0700
 categories: cartography ML
 ---
@@ -118,4 +118,4 @@ If nothing else, this project has given me a **lot** to think about and work on.
 - Find a way to reduce the time it takes to build embeddings in this graph (12 hours is awful)
 - Try this same experiment but for labels other than S3 buckets. For example maybe I can try to tag EC2 instances instead, or maybe not even deal with tagging at all.
 
-Anyway, I hope you enjoyed this read. If you have any ideas on how I can get better results, please tweet me [@alexchantavy](https://twitter.com/alexchantavy). Do also let me know if you are working on or have solved any other graph-related ML problems! If you're interested in [Cartography](https://github.com/lyft/cartography), please come say hi in our public Slack as we'd love to hear from you.
+Anyway, I hope you enjoyed this read. If you have any ideas on how I can get better results, please tweet me [@alexchantavy](https://twitter.com/alexchantavy). I guess the upside is that with results of 7.5% there is nowhere else to go but up. Do also let me know if you are working on or have solved any other graph-related ML problems! If you're interested in [Cartography](https://github.com/lyft/cartography), please come say hi in our public Slack as we'd love to hear from you.
