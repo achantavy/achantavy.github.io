@@ -11,7 +11,7 @@ For my final [CSEP 590C](https://bit.ly/uwfsdl) project at UW (I'm finally gradu
 ![a sample graph](https://github.com/lyft/cartography/raw/master/docs/images/accountsandrds.png)
 
 
-This blog post goes over how I found a graph problem to apply deep learning techniques to, how I gave it the good ol' college try, and how I ended up with more questions than answers. I'll preface this by first saying that ⚠️I am **not** a data scientist⚠️ so this post with embarassingly bad results is just me trying to apply ML techniques to a domain that I'm familiar with.
+This blog post goes over how I found a graph problem to apply deep learning techniques and how at the end I now have more questions than answers. I'll preface this by first saying that ⚠️I am **not** a data scientist⚠️ so this post with embarassingly bad results is just me trying to apply ML techniques to a domain that I'm familiar with.
 
 # Finding a problem for my solution
 (lol)
