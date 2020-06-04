@@ -1,7 +1,7 @@
 ---
 layout: post
 author: alex
-title:  "A Deepwalk with Cartography"
+title:  "7.5% accuracy: My Deepwalk with Cartography"
 date:   2020-06-03 21:05:38 -0700
 categories: cartography ML
 ---
