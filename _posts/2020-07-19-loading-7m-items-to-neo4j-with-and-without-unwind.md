@@ -9,15 +9,11 @@ date: 2020-07-19 11:53:00 -0700
 
 Is it faster for your application to write large amounts of data to Neo4j in one large, batched query, or in many, much smaller ones?
 
-One official Neo4j blog post on query tuning prefers the former, saying you should "[batch your writes]((https://neo4j.com/blog/cypher-write-fast-furious/#batch-cypher-writes))" at the application layer using one large `UNWIND` query. On the other hand, that same blog post also says
+One official Neo4j blog post on query tuning prefers the former, saying you should "[batch your writes]((https://neo4j.com/blog/cypher-write-fast-furious/#batch-cypher-writes))" at the application layer using one large `UNWIND` query. 
 
->  A number of small optimized queries always run faster than one long, un-optimized query.
+On the other hand, that same blog post also says "a number of small optimized queries always run faster than one long, un-optimized query". It advises devs to "[avoid long cypher queries (30-40 lines)](https://neo4j.com/blog/cypher-write-fast-furious/#long-cypher-queries)". What does this mean though? It's very possible to write fast queries that are 30 lines long and slow queries that are 2 lines long. How much is "a number"? Why 30 lines and not 20?
 
-It advises devs to "[avoid long cypher queries (30-40 lines)](https://neo4j.com/blog/cypher-write-fast-furious/#long-cypher-queries)". What does this mean though? It's very possible to write fast queries that are 30 lines long and slow queries that are 2 lines long. How much is "a number"? Why 30 lines and not 20?
-
-I thought the explanations weren't written as clear as they could've been, so now it's time for an experiment: Let's compare loading large amounts of data to Neo4j in (1) a batched way using `UNWIND` versus (2) multiple smaller queries to find out for ourselves. 
-
-If you don't feel like reading through the rests of this, **I'll tell you my conclusion up front**: in this experiment, I found that `UNWIND` was at least 900 times faster than running multiple transactions. Further, it scales linearly with the number of items you throw at it: it takes 1 second to load 70,000 items, and about 100 seconds tot load 7,000,000 items.
+I thought the explanations weren't written as clear as they could've been, so now it's time for an experiment: Let's compare loading large amounts of data to Neo4j in (1) a batched way using `UNWIND` versus (2) multiple smaller queries to find out for ourselves. If you don't feel like reading through the rests of this, **I'll tell you my conclusion up front**: in this experiment, I found that `UNWIND` was at least 900 times faster than running multiple transactions. Further, it scales linearly with the number of items you throw at it: it takes 1 second to load 70,000 items, and about 100 seconds to load 7,000,000 items.
 
 # Experiment setup
 
