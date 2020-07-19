@@ -162,7 +162,7 @@ neobolt.exceptions.ServiceUnavailable: Failed to write to defunct connection Add
 
 Interesting! This is the same error observed in Cartography issue [#170](https://github.com/lyft/cartography/issues/170), which we've had a hard time reproducing. I would have thought that multiple smaller writes would avoid weird socket problems like this because there's less data to write in each interaction, but anyway, this is a topic for another day.
 
-So for this experiment, I observed my code running for at least 15 minutets, which is already **900 times** slower than approach 1's `UNWIND` method (900 seconds in 15 minutes vs the 1 second it took for `UNWIND` to run).
+So for this experiment, I observed my code running for at least 15 minutes, which is already **900 times** slower than approach 1's `UNWIND` method (900 seconds in 15 minutes vs the 1 second it took for `UNWIND` to run).
 
 # Let's try 7,000,000 items
 
