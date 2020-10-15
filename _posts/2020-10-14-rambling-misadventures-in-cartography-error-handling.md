@@ -87,4 +87,4 @@ Let's step back a bit, what am I trying to do here?
 
 I need the sync to be more reliable. If it fails, then I need to know about it, but I don't want it to give up on the rest of my data because a full sync run takes about 10 hours and I don't want to wait 12 hours for the next cron job to start, and I also don't want to be bothered kicking off a manual run.
 
-So, now I'm back to working on DAGs. I don't care about parallelism in DAGs just yet, I just want this sync to be a bit more reliable. One thing to keep in mind with DAGs though is that if there is a failure at any point, the Drift Detection sync stage cannot rely on the data because missing and incorrect nodes may fire false alerts.
+So, now I'm back to working on DAGs. I don't care about any parallelism or speed-up factor just yet, I just don't want avoidable crashes. So yeah, I'm going to play around with https://github.com/lyft/cartography/pull/289 again, and if that doesn't work out, I think I'll learn me some Airflow.
